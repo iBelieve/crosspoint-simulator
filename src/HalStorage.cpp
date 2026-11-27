@@ -143,14 +143,26 @@ HalFile &HalFile::operator=(HalFile &&other) {
   return *this;
 }
 
+// In the browser, fsync on the IndexedDB-backed SD card starts an
+// asynchronous save, which deadlocks when a worker thread calls it. Writes
+// are already in memory there, and web/pre.js saves the card periodically.
+static int syncFile(int fd) {
+#ifdef __EMSCRIPTEN__
+  (void)fd;
+  return 0;
+#else
+  return fsync(fd);
+#endif
+}
+
 void HalFile::flush() {
   if (impl && impl->fd >= 0)
-    fsync(impl->fd);
+    syncFile(impl->fd);
 }
 bool HalFile::sync() {
   if (!impl || impl->fd < 0)
     return false;
-  return fsync(impl->fd) == 0;
+  return syncFile(impl->fd) == 0;
 }
 size_t HalFile::getName(char *name, size_t len) {
   if (!impl || impl->path.empty())

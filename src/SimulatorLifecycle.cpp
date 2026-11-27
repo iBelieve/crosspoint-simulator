@@ -7,6 +7,8 @@
 #include <cstring>
 #include <unistd.h>
 
+#include "SimulatorWeb.h"
+
 namespace {
 
 constexpr const char *kWakeReasonEnv = "CROSSPOINT_SIM_WAKE_REASON";
@@ -53,6 +55,10 @@ WakeReason consumeWakeReason() {
 }
 
 [[noreturn]] void rebootAsPowerWake() {
+#ifdef __EMSCRIPTEN__
+  // The page reload carries the wake reason and switch level in its URL.
+  SimulatorWeb::reload(true);
+#endif
   if (!gArgv || !gArgv[0]) {
     std::fputs("SimulatorLifecycle: missing argv for reboot\n", stderr);
     _exit(1);

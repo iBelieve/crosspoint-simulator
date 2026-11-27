@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CrossPoint Simulator</title>
+<style>
+  :root { --bg: #f4f2ee; --fg: #1d1c1a; --muted: #6b6760; --key: #fff; --line: #d6d2ca; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #1b1a18; --fg: #ece9e3; --muted: #a29d94; --key: #2a2926; --line: #3d3b37; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg);
+         font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 880px; margin: 0 auto; padding: 16px; display: grid; gap: 12px; justify-items: center; }
+  header { width: 100%; display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  h1 { font-size: 16px; margin: 0; }
+  #build { color: var(--muted); font-size: 13px; }
+  #status { color: var(--muted); min-height: 1.4em; }
+  canvas { display: block; max-width: 100%; height: auto !important; background: #fff;
+           border: 1px solid var(--line); border-radius: 6px; touch-action: none; }
+  .keys { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+  button { font: inherit; color: var(--fg); background: var(--key); border: 1px solid var(--line);
+           border-radius: 6px; padding: 8px 12px; min-width: 44px; cursor: pointer; user-select: none; touch-action: none; }
+  button:active { filter: brightness(0.9); }
+  kbd { font: 12px ui-monospace, monospace; border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
+  footer { color: var(--muted); font-size: 13px; text-align: center; }
+  footer button { padding: 4px 8px; font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+  <header><h1>CrossPoint Simulator</h1><span id="build"></span></header>
+  <div id="status">Loading…</div>
+  <canvas id="canvas" tabindex="0" oncontextmenu="event.preventDefault()"></canvas>
+  <div class="keys" id="keys">
+    <button data-code="Escape" title="Esc">Back</button>
+    <button data-code="ArrowLeft" title="←">◀</button>
+    <button data-code="Enter" title="Enter">Confirm</button>
+    <button data-code="ArrowRight" title="→">▶</button>
+    <button data-code="ArrowUp" title="↑">▲</button>
+    <button data-code="ArrowDown" title="↓">▼</button>
+    <button data-code="KeyP" title="P">Power</button>
+  </div>
+  <footer>
+    Keys: <kbd>Esc</kbd> back, <kbd>Enter</kbd> confirm, arrows, <kbd>P</kbd> power, <kbd>S</kbd> sleep.
+    The SD card is saved in this browser.
+    <button id="reset" type="button">Reset SD card</button>
+  </footer>
+</main>
+<script>
+  var statusEl = document.getElementById('status');
+  var Module = {
+    canvas: document.getElementById('canvas'),
+    print: function (t) { console.log(t); },
+    printErr: function (t) { console.error(t); },
+    setStatus: function (t) { statusEl.textContent = t; },
+    onRuntimeInitialized: function () { statusEl.textContent = ''; },
+  };
+  window.onerror = function () { statusEl.textContent = 'The simulator stopped. See the browser console.'; };
+
+  // On-screen keys send the same key events SDL reads from the keyboard.
+  var KEY_CODES = { Escape: 27, Enter: 13, ArrowLeft: 37, ArrowUp: 38, ArrowRight: 39, ArrowDown: 40, KeyP: 80 };
+  function sendKey(type, code) {
+    var e = new KeyboardEvent(type, { code: code, key: code.replace(/^Key/, '').toLowerCase(), bubbles: true });
+    Object.defineProperty(e, 'keyCode', { get: function () { return KEY_CODES[code]; } });
+    Object.defineProperty(e, 'which', { get: function () { return KEY_CODES[code]; } });
+    window.dispatchEvent(e);
+  }
+  document.querySelectorAll('#keys button').forEach(function (b) {
+    var down = false;
+    b.addEventListener('pointerdown', function (e) { e.preventDefault(); down = true; b.setPointerCapture(e.pointerId); sendKey('keydown', b.dataset.code); });
+    var up = function () { if (down) { down = false; sendKey('keyup', b.dataset.code); } };
+    b.addEventListener('pointerup', up);
+    b.addEventListener('pointercancel', up);
+  });
+  document.getElementById('reset').addEventListener('click', function () {
+    if (Module.simResetStorage) Module.simResetStorage();
+  });
+
+  // build.json is written by the preview deploy: {"label": "...", "url": "..."}.
+  fetch('build.json', { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (b) {
+    if (!b || !b.label) return;
+    var el = document.getElementById('build');
+    var a = document.createElement(b.url ? 'a' : 'span');
+    a.textContent = b.label;
+    if (b.url) { a.href = b.url; a.style.color = 'inherit'; }
+    el.appendChild(a);
+  }).catch(function () {});
+</script>
+{{{ SCRIPT }}}
+</body>
+</html>

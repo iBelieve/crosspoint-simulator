@@ -57,6 +57,12 @@ The simulator is a collection of host-side reimplementations of the firmware's h
   [src/SimScreenText.cpp](src/SimScreenText.cpp) collects the strings between
   `clearScreen()` and a refresh.
 - Linker stubs: [src/firmware_link_stubs.cpp](src/firmware_link_stubs.cpp) provides symbols the firmware expects from other translation units (uzlib checksums, HWCDC Serial shim, LUT stubs). When the firmware adds a new global-extern symbol with no simulator counterpart, add its stub here.
+- Browser build: [emscripten_toolchain.py](emscripten_toolchain.py) swaps
+  the native platform's gcc for Emscripten, and [web/](web/) holds the page
+  shell, the JS glue and the OpenSSL-name hash shims. Code guarded by
+  `__EMSCRIPTEN__` lives mostly in [src/SimulatorWeb.cpp](src/SimulatorWeb.cpp).
+  Never block the browser main thread on work that needs it (async JS such as
+  IndexedDB saves); see [docs/web.md](docs/web.md).
 
 ## Device profiles and input mapping
 
