@@ -17,6 +17,8 @@
   h1 { font-size: 16px; margin: 0; }
   #build { color: var(--muted); font-size: 13px; }
   #status { color: var(--muted); min-height: 1.4em; }
+  #notice:empty { display: none; }
+  #notice { border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; }
   canvas { display: block; max-width: 100%; height: auto !important; background: #fff;
            border: 1px solid var(--line); border-radius: 6px; touch-action: none; }
   .keys { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
@@ -32,6 +34,7 @@
 <main>
   <header><h1>CrossPoint Simulator</h1><span id="build"></span></header>
   <div id="status">Loading…</div>
+  <div id="notice" role="status"></div>
   <canvas id="canvas" tabindex="0" oncontextmenu="event.preventDefault()"></canvas>
   <div class="keys" id="keys">
     <button data-code="Escape" title="Esc">Back</button>
@@ -56,6 +59,7 @@
     printErr: function (t) { console.error(t); },
     setStatus: function (t) { statusEl.textContent = t; },
     onRuntimeInitialized: function () { statusEl.textContent = ''; },
+    simNotice: function (t) { document.getElementById('notice').textContent = t; },
   };
   window.onerror = function () { statusEl.textContent = 'The simulator stopped. See the browser console.'; };
 

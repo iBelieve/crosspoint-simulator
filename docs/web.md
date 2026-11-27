@@ -37,7 +37,8 @@ Cross-Origin-Embedder-Policy: require-corp
   browser event loop (`SimulatorWeb::sleepOnMainThread`). FreeRTOS tasks are
   pthreads in Web Workers, as `std::thread` is on the host.
 - **SD card.** `./fs_` is an IndexedDB-backed folder that `web/pre.js` saves
-  every second and when the tab is hidden. `fsync` is a no-op: on IndexedDB it
+  every second and when the tab is hidden. Only the first tab open on a site
+  saves it (a Web Lock); other tabs say their changes are not kept. `fsync` is a no-op: on IndexedDB it
   starts an asynchronous save that deadlocks when a worker thread calls it.
   The page's "Reset SD card" button clears it.
 - **Seed files.** A `files.json` next to the page lists files, relative to
@@ -45,8 +46,14 @@ Cross-Origin-Embedder-Policy: require-corp
   `["books/sample.epub"]`.
 - **Environment.** URL query parameters named `CROSSPOINT_SIM_*` become
   environment variables, for example `?CROSSPOINT_SIM_SCREEN_TEXT=1`.
-- **Restart and wake.** Deep-sleep wake and `HalSystem::restart()` save the
-  SD card and reload the page instead of `execvp`. The reload carries the wake
+  `CROSSPOINT_SIM_WAKE_REASON` is removed from the address bar once read, so
+  a manual reload is a cold boot.
+- **Exceptions.** Emscripten builds without exception catching, so a `throw`
+  aborts. A malformed `WAIT` regex in an input script stops the page instead
+  of exiting with status 2.
+- **Restart and wake.** Deep-sleep wake, `ESP.restart()` and
+  `HalSystem::restart()` save the SD card and reload the page. On the host,
+  wake relaunches the process with `execvp` and `ESP.restart()` does nothing. The reload carries the wake
   reason and slide-switch level in the URL and promotes the `*_AFTER_WAKE`
   input script and screenshot schedule, as the host relaunch does.
 - **Hashes.** Emscripten has no OpenSSL port, so `web/include/openssl/`

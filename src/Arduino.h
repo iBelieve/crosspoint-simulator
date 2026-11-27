@@ -73,7 +73,11 @@ struct ESPMock {
   }
 
   uint32_t getFreeHeap() { return heapValue("CROSSPOINT_SIM_FREE_HEAP"); }
-  void restart() {}
+  void restart() {
+#ifdef __EMSCRIPTEN__
+    SimulatorWeb::reload(false);
+#endif
+  }
   uint32_t getHeapSize() { return HEAP_SIZE; }
   uint32_t getMinFreeHeap() { return getFreeHeap(); }
   uint32_t getMaxAllocHeap() {

@@ -66,6 +66,12 @@ env.Append(
     ]
 )
 
+# Relink when the page shell or JS glue changes; SCons does not see them.
+env.Depends(
+    "$BUILD_DIR/${PROGNAME}${PROGSUFFIX}",
+    [os.path.join(SIM_DIR, "web", name) for name in ("pre.js", "shell.html")],
+)
+
 # CROSSPOINT_SIM_WEB_DEBUG=1 keeps function names and runtime checks, for
 # readable stacks in the browser's devtools.
 if os.environ.get("CROSSPOINT_SIM_WEB_DEBUG"):
