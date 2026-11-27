@@ -19,7 +19,9 @@ extra_scripts =
 ```
 
 `pio run -e simulator_web` writes `program.html`, `program.js` and
-`program.wasm` to `.pio/build/simulator_web/`. Rename `program.html` to
+`program.wasm` to `.pio/build/simulator_web/`. For local work on the
+simulator, a `symlink://` lib_dep works if `extra_scripts` points at
+`emscripten_toolchain.py` in the checkout. Rename `program.html` to
 `index.html` when publishing. Set `CROSSPOINT_SIM_WEB_DEBUG=1` at build time
 to keep function names and runtime checks for devtools stacks.
 
@@ -51,9 +53,10 @@ Cross-Origin-Embedder-Policy: require-corp
 - **Exceptions.** Emscripten builds without exception catching, so a `throw`
   aborts. A malformed `WAIT` regex in an input script stops the page instead
   of exiting with status 2.
-- **Restart and wake.** Deep-sleep wake, `ESP.restart()` and
-  `HalSystem::restart()` save the SD card and reload the page. On the host,
-  wake relaunches the process with `execvp` and `ESP.restart()` does nothing. The reload carries the wake
+- **Restart and wake.** Deep-sleep wake and `HalSystem::restart()` save the
+  SD card and reload the page; the host relaunches with `execvp` or exits.
+  `ESP.restart()` does nothing, as on the host: the firmware keeps silent
+  restart targets in `RTC_NOINIT` globals that a reload would lose. The reload carries the wake
   reason and slide-switch level in the URL and promotes the `*_AFTER_WAKE`
   input script and screenshot schedule, as the host relaunch does.
 - **Hashes.** Emscripten has no OpenSSL port, so `web/include/openssl/`

@@ -6,13 +6,16 @@ writes program.html (from web/shell.html), program.js and program.wasm.
 """
 
 Import("env")
+import inspect
 import os
 import shutil
 
 if not shutil.which("emcc"):
     raise SystemExit("simulator_web: emcc not found; source emsdk_env.sh first")
 
-SIM_DIR = os.path.dirname(os.path.abspath(env.subst("$PROJECT_LIBDEPS_DIR/$PIOENV/simulator/library.json")))
+# This script's folder, so a symlink:// lib_dep with extra_scripts pointing
+# into the checkout works as well as an installed copy.
+SIM_DIR = os.path.dirname(os.path.abspath(inspect.getframeinfo(inspect.currentframe()).filename))
 
 TOOLS = dict(
     CC="emcc",
@@ -30,10 +33,17 @@ env.Replace(**TOOLS)
 _tool = env.Tool
 
 
+_pending_tools = {"gcc", "g++"}
+
+
 def _tool_then_emscripten(name, *args, **kwargs):
     result = _tool(name, *args, **kwargs)
-    if name in ("gcc", "g++"):
+    if name in _pending_tools:
         env.Replace(**TOOLS)
+        _pending_tools.discard(name)
+        if not _pending_tools:
+            # Done: library clones must not inherit this bound override.
+            env.Tool = _tool
     return result
 
 
@@ -51,8 +61,9 @@ env.Append(
     LINKFLAGS=[
         "-sASYNCIFY",
         "-sASYNCIFY_STACK_SIZE=262144",
-        "-sALLOW_MEMORY_GROWTH",
-        "-sINITIAL_MEMORY=134217728",
+        # Fixed memory: growth with -pthread slows every JS access to the
+        # heap, which includes all SD card I/O.
+        "-sINITIAL_MEMORY=268435456",
         "-sSTACK_SIZE=1048576",
         "-sDEFAULT_PTHREAD_STACK_SIZE=1048576",
         "-sPTHREAD_POOL_SIZE=8",

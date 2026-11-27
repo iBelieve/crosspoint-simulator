@@ -61,7 +61,11 @@
     onRuntimeInitialized: function () { statusEl.textContent = ''; },
     simNotice: function (t) { document.getElementById('notice').textContent = t; },
   };
-  window.onerror = function () { statusEl.textContent = 'The simulator stopped. See the browser console.'; };
+  var stopped = function () { statusEl.textContent = 'The simulator stopped. See the browser console.'; };
+  window.addEventListener('error', stopped);
+  // A crash before main() first yields rejects Emscripten's run() promise.
+  window.addEventListener('unhandledrejection', stopped);
+  Module.onAbort = stopped;
 
   // On-screen keys send the same key events SDL reads from the keyboard.
   var KEY_CODES = { Escape: 27, Enter: 13, ArrowLeft: 37, ArrowUp: 38, ArrowRight: 39, ArrowDown: 40, KeyP: 80 };

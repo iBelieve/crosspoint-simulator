@@ -73,6 +73,11 @@ function simTakeLock() {
       resolve();
       // Hold the lock for the life of the page.
       return simOwnsCard ? new Promise(function () {}) : null;
+    }).catch(function (err) {
+      // Locks refused (blocked site data, sandboxed frame): run without saving.
+      console.error('simulator: no tab lock; the SD card will not be saved', err);
+      simOwnsCard = false;
+      resolve();
     });
   });
 }
@@ -103,21 +108,42 @@ function simSeedFiles() {
 }
 
 var simSaving = false;
+var simSaveAgain = false;  // a save was asked for while one was running
+var simSaveWaiters = [];
 function simSave(done) {
+  if (done) simSaveWaiters.push(done);
   if (!simOwnsCard || !simLoaded) {
-    if (done) done();
+    simFinishSave();
     return;
   }
   if (simSaving) {
-    if (done) setTimeout(function () { simSave(done); }, 50);
+    // The running save took its snapshot already; run one more after it.
+    simSaveAgain = true;
     return;
   }
   simSaving = true;
   FS.syncfs(false, function (err) {
     simSaving = false;
     if (err) console.error('simulator: could not save SD card', err);
-    if (done) done();
+    if (simSaveAgain) {
+      simSaveAgain = false;
+      simSave();
+      return;
+    }
+    simFinishSave();
   });
+}
+
+function simFinishSave() {
+  var waiters = simSaveWaiters;
+  simSaveWaiters = [];
+  waiters.forEach(function (done) { done(); });
+}
+
+// Runs callback once no save is in flight, without starting one.
+function simWhenIdle(callback) {
+  if (!simSaving) callback();
+  else setTimeout(function () { simWhenIdle(callback); }, 50);
 }
 
 Module.postRun = Module.postRun || [];
@@ -154,7 +180,13 @@ Module.simReload = function (powerWake, slideSwitch) {
 Module.simResetStorage = function () {
   clearInterval(simSaveTimer);
   simOwnsCard = false;  // no more saves from this page
-  IDBFS.quit();         // close our connection so the delete is not blocked
+  simWhenIdle(function () {
+    IDBFS.quit();  // close our connection so the delete is not blocked
+    simDeleteCard();
+  });
+};
+
+function simDeleteCard() {
   var reload = function () {
     location.replace(location.pathname + simQueryWithout(SIM_ONE_SHOT) + location.hash);
   };
@@ -163,4 +195,4 @@ Module.simResetStorage = function () {
   request.onblocked = function () {
     simStatus('Close the simulator in other tabs to reset the SD card.');
   };
-};
+}
