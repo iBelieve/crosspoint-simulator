@@ -46,9 +46,10 @@ Cross-Origin-Embedder-Policy: require-corp
   their changes are not kept. `fsync` is a no-op: on IndexedDB it
   starts an asynchronous save that deadlocks when a worker thread calls it.
   The page's "Reset SD card" button clears it.
-- **On-screen keys.** `web/shell.html` draws the X4 family's keys: Back,
-  Confirm, Left and Right under the screen, Power and Up/Down at the side,
-  each sending the same key event as the keyboard. Profiles with other keys
+- **On-screen keys.** `web/shell.html` draws the X4 Classic's keys: two
+  bars under the screen (Back and Confirm, then Left and Right), Up on the
+  left side, Power and Down on the right side. Each sends the same key event
+  as the keyboard. Profiles with other keys
   (Home, a slide switch) need the keyboard for those.
 - **Seed files.** A `files.json` next to the page lists files, relative to
   the page, to copy onto the SD card when they are missing, for example

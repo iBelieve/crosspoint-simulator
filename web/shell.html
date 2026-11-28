@@ -19,31 +19,37 @@
   #status { color: var(--muted); min-height: 1.4em; }
   #notice:empty { display: none; }
   #notice { border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; }
-  /* The page draws an X4-family bezel: front keys under the screen (in the
-     order of the on-screen button hints), side keys and power on the right. */
-  .device { display: grid; grid-template-columns: minmax(0, auto) auto; gap: 10px 12px;
-            align-items: start; max-width: 100%; }
-  .bezel { background: var(--key); border: 1px solid var(--line); border-radius: 18px; padding: 14px 14px 12px;
+  /* The page draws the X4 Classic: two rocker bars under the screen (Back and
+     Confirm, then Previous and Next page, under the firmware's button hints),
+     Previous Page on the left side, Power and Next Page on the right side. */
+  .device { padding: 0 40px; max-width: 100%; }
+  .bezel { position: relative; background: var(--key); border: 1px solid var(--line); border-radius: 18px; padding: 14px 14px 12px;
            display: grid; gap: 12px; min-width: 0; }
   /* Fit the whole device, front keys included, in the window height. */
   canvas { display: block; max-width: 100%; width: auto !important; height: auto !important;
            max-height: max(360px, calc(100vh - 250px)); background: #fff;
            border: 1px solid var(--line); border-radius: 4px; touch-action: none; }
-  /* Centred under the firmware's button hints (20/39/61/79% of the width). */
+  /* Each bar's halves are centred under the hints at 20/39% and 61/79%. */
   .front { position: relative; height: 48px; }
-  .front button { position: absolute; top: 0; width: 18%; padding: 6px 2px; transform: translateX(-50%); }
-  .front button:nth-child(1) { left: 20%; }
-  .front button:nth-child(2) { left: 39%; }
-  .front button:nth-child(3) { left: 61%; }
-  .front button:nth-child(4) { left: 79%; }
-  .side { display: grid; gap: 8px; padding-top: 40px; }
-  .side .gap { height: 120px; }
+  .bar { position: absolute; top: 0; bottom: 0; width: 37.5%; display: grid; grid-template-columns: 1fr 1fr;
+         border: 1px solid var(--line); border-radius: 24px; overflow: hidden; background: var(--bg); }
+  .bar:nth-child(1) { left: 10.75%; }
+  .bar:nth-child(2) { left: 51.25%; }
+  .bar button { border: 0; border-radius: 0; min-width: 0; padding: 4px 2px; }
+  .bar button + button { border-left: 1px solid var(--line); }
+  @media (max-width: 480px) { .bar { border-radius: 14px; } .bar button { font-size: 10px; } }
+  /* Side keys stick out of the bezel's edges, at the device's heights. */
+  .side { position: absolute; width: 30px; min-width: 0; padding: 6px 0; height: 12%;
+          align-content: center; }
+  .side.left { right: 100%; top: 21%; border-right: 0; border-radius: 8px 0 0 8px; }
+  .side.right { left: 100%; border-left: 0; border-radius: 0 8px 8px 0; }
+  .side.power { top: 11%; height: 7%; }
+  .side.next { top: 21%; }
   button { font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--line);
            border-radius: 8px; padding: 6px 10px; min-width: 44px; min-height: 44px; cursor: pointer;
            user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
            touch-action: none; display: grid; justify-items: center; line-height: 1.2; }
   button small { color: var(--muted); font-size: 11px; }
-  .side button { width: 64px; }
   button:active { filter: brightness(0.9); }
   kbd { font: 12px ui-monospace, monospace; border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
   footer { color: var(--muted); font-size: 13px; text-align: center; }
@@ -59,21 +65,22 @@
     <div class="bezel">
       <canvas id="canvas" tabindex="0" oncontextmenu="event.preventDefault()"></canvas>
       <div class="front" aria-label="Front buttons">
-        <button data-code="Escape">Back<small>Esc</small></button>
-        <button data-code="Enter">Confirm<small>Enter</small></button>
-        <button data-code="ArrowLeft">Left<small>←</small></button>
-        <button data-code="ArrowRight">Right<small>→</small></button>
+        <div class="bar">
+          <button data-code="Escape" title="Back (Esc)">Back<small>Esc</small></button>
+          <button data-code="Enter" title="Confirm (Enter)">Confirm<small>Enter</small></button>
+        </div>
+        <div class="bar">
+          <button data-code="ArrowLeft" title="Previous (←)">Prev<small>←</small></button>
+          <button data-code="ArrowRight" title="Next (→)">Next<small>→</small></button>
+        </div>
       </div>
-    </div>
-    <div class="side" aria-label="Side buttons">
-      <button data-code="KeyP">Power<small>P</small></button>
-      <div class="gap"></div>
-      <button data-code="ArrowUp">▲<small>↑</small></button>
-      <button data-code="ArrowDown">▼<small>↓</small></button>
+      <button class="side left" data-code="ArrowUp" title="Previous page (↑)">▲<small>↑</small></button>
+      <button class="side right power" data-code="KeyP" title="Power (P)">⏻<small>P</small></button>
+      <button class="side right next" data-code="ArrowDown" title="Next page (↓)">▼<small>↓</small></button>
     </div>
   </div>
   <footer>
-    Front keys under the screen, page-turn keys and power on the side. Hold Power, or press <kbd>S</kbd>, to sleep.
+    Laid out like the X4 Classic; each key shows its keyboard key. Hold Power, or press <kbd>S</kbd>, to sleep.
     The SD card is saved in this browser.
     <button id="reset" type="button">Reset SD card</button>
   </footer>
