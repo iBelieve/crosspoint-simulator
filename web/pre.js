@@ -38,7 +38,8 @@ Module.preRun = Module.preRun || [];
 Module.preRun.push(function () {
   var params = new URLSearchParams(location.search);
   params.forEach(function (value, key) {
-    if (key.indexOf('CROSSPOINT_SIM_') === 0) ENV[key] = value;
+    // The SD card must stay at SIM_SD, the folder that is saved.
+    if (key.indexOf('CROSSPOINT_SIM_') === 0 && key !== 'CROSSPOINT_SIM_SD') ENV[key] = value;
   });
   if (SIM_ONE_SHOT.some(function (name) { return params.has(name); })) {
     history.replaceState(null, '', location.pathname + simQueryWithout(SIM_ONE_SHOT) + location.hash);
@@ -64,7 +65,9 @@ Module.preRun.push(function () {
 // Resolves once we know whether this tab owns the saved card.
 function simTakeLock() {
   if (!navigator.locks) {
-    simOwnsCard = true;
+    // Without a lock two tabs would overwrite each other's saves.
+    console.error('simulator: no Web Locks; the SD card will not be saved');
+    simLockError = true;
     return Promise.resolve();
   }
   return new Promise(function (resolve) {

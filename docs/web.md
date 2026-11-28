@@ -36,18 +36,26 @@ Cross-Origin-Embedder-Policy: require-corp
 
 - **Main loop.** `main()` runs on the browser's main thread with ASYNCIFY.
   `SDL_Delay`, and `delay()`/`vTaskDelay()` on the main thread, yield to the
-  browser event loop (`SimulatorWeb::sleepOnMainThread`). FreeRTOS tasks are
+  browser event loop (`SimulatorWeb::sleepOnMainThread`), except that a delay
+  under 4 ms spins instead when the last yield was under 16 ms ago. Spinning
+  does not run input, IndexedDB callbacks or proxied worker calls. FreeRTOS tasks are
   pthreads in Web Workers, as `std::thread` is on the host.
 - **SD card.** `./fs_` is an IndexedDB-backed folder that `web/pre.js` saves
   every second and when the tab is hidden. Only the first tab open on a site
-  saves it (a Web Lock); other tabs say their changes are not kept. `fsync` is a no-op: on IndexedDB it
+  saves it (a Web Lock); other tabs, and browsers without Web Locks, say
+  their changes are not kept. `fsync` is a no-op: on IndexedDB it
   starts an asynchronous save that deadlocks when a worker thread calls it.
   The page's "Reset SD card" button clears it.
+- **On-screen keys.** `web/shell.html` draws the X4 family's keys: Back,
+  Confirm, Left and Right under the screen, Power and Up/Down at the side,
+  each sending the same key event as the keyboard. Profiles with other keys
+  (Home, a slide switch) need the keyboard for those.
 - **Seed files.** A `files.json` next to the page lists files, relative to
   the page, to copy onto the SD card when they are missing, for example
   `["books/sample.epub"]`.
 - **Environment.** URL query parameters named `CROSSPOINT_SIM_*` become
-  environment variables, for example `?CROSSPOINT_SIM_SCREEN_TEXT=1`.
+  environment variables, for example `?CROSSPOINT_SIM_SCREEN_TEXT=1`, except
+  `CROSSPOINT_SIM_SD`: the SD card stays in the saved folder.
   `CROSSPOINT_SIM_WAKE_REASON` is removed from the address bar once read, so
   a manual reload is a cold boot.
 - **Time zone.** Emscripten's `localtime` uses the browser's zone and

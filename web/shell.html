@@ -107,12 +107,23 @@
     Object.defineProperty(e, 'which', { get: function () { return KEY_CODES[code]; } });
     window.dispatchEvent(e);
   }
-  document.querySelectorAll('#keys button[data-code]').forEach(function (b) {
+  var keys = document.getElementById('keys');
+  // A context menu would take the release and leave the key held.
+  keys.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+  keys.querySelectorAll('button[data-code]').forEach(function (b) {
     var down = false;
-    b.addEventListener('pointerdown', function (e) { e.preventDefault(); down = true; b.setPointerCapture(e.pointerId); sendKey('keydown', b.dataset.code); });
+    b.addEventListener('pointerdown', function (e) {
+      if (e.button !== 0 || down) return;  // primary button or touch only
+      e.preventDefault();
+      down = true;
+      b.setPointerCapture(e.pointerId);
+      sendKey('keydown', b.dataset.code);
+    });
     var up = function () { if (down) { down = false; sendKey('keyup', b.dataset.code); } };
     b.addEventListener('pointerup', up);
     b.addEventListener('pointercancel', up);
+    b.addEventListener('lostpointercapture', up);
+    window.addEventListener('blur', up);
   });
   document.getElementById('reset').addEventListener('click', function () {
     if (Module.simResetStorage) Module.simResetStorage();

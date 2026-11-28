@@ -22,6 +22,10 @@ def run_simulator(source, target, env):
     import os
     import subprocess
 
+    if env.get("PROGSUFFIX") == ".html":
+        print(env.subst("Browser build: serve $BUILD_DIR with COOP/COEP headers "
+                        "and open program.html; see docs/web.md"))
+        return
     binary = env.subst("$BUILD_DIR/program")
     runtime_env = os.environ.copy()
     configured_http_port = env.GetProjectOption(
