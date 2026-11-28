@@ -4,7 +4,7 @@
 //   so ?CROSSPOINT_SIM_INPUT_SCRIPT=... works as it does on the command line.
 // - The simulated SD card (./fs_) lives in IndexedDB and is saved every
 //   second and when the page is hidden. Only one tab per site saves it; other
-//   tabs run on a copy whose changes are not kept.
+//   tabs, and browsers without Web Locks, run on a copy that is not kept.
 // - files.json next to the page lists files to copy onto a fresh SD card, for
 //   example sample books: ["books/sample.epub", ...]. Existing files are kept.
 
@@ -19,7 +19,7 @@ var SIM_ONE_SHOT = ['CROSSPOINT_SIM_WAKE_REASON'];
 var simOwnsCard = false;
 var simLoaded = false;
 var simSaveTimer = null;
-var simLockError = false;  // the browser refused the Web Lock
+var simLockError = false;  // no Web Lock: refused or unsupported
 
 // A lasting notice; Emscripten clears Module.setStatus after startup.
 function simStatus(text) {

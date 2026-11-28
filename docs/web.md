@@ -35,9 +35,9 @@ Cross-Origin-Embedder-Policy: require-corp
 ## How it differs from the host build
 
 - **Main loop.** `main()` runs on the browser's main thread with ASYNCIFY.
-  `SDL_Delay`, and `delay()`/`vTaskDelay()` on the main thread, yield to the
-  browser event loop (`SimulatorWeb::sleepOnMainThread`), except that a delay
-  under 4 ms spins instead when the last yield was under 16 ms ago. Spinning
+  `SDL_Delay` yields to the browser event loop. `delay()`/`vTaskDelay()` on
+  the main thread yield too (`SimulatorWeb::sleepOnMainThread`), except that a
+  delay under 4 ms spins instead when the last yield was under 16 ms ago. Spinning
   does not run input, IndexedDB callbacks or proxied worker calls. FreeRTOS tasks are
   pthreads in Web Workers, as `std::thread` is on the host.
 - **SD card.** `./fs_` is an IndexedDB-backed folder that `web/pre.js` saves

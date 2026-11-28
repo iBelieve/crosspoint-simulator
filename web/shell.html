@@ -40,7 +40,8 @@
   .side .gap { height: 120px; }
   button { font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--line);
            border-radius: 8px; padding: 6px 10px; min-width: 44px; min-height: 44px; cursor: pointer;
-           user-select: none; touch-action: none; display: grid; justify-items: center; line-height: 1.2; }
+           user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+           touch-action: none; display: grid; justify-items: center; line-height: 1.2; }
   button small { color: var(--muted); font-size: 11px; }
   .side button { width: 64px; }
   button:active { filter: brightness(0.9); }
@@ -111,19 +112,21 @@
   // A context menu would take the release and leave the key held.
   keys.addEventListener('contextmenu', function (e) { e.preventDefault(); });
   keys.querySelectorAll('button[data-code]').forEach(function (b) {
-    var down = false;
+    var pointer = null;  // the pointer holding this key
     b.addEventListener('pointerdown', function (e) {
-      if (e.button !== 0 || down) return;  // primary button or touch only
+      if (e.button !== 0 || pointer !== null) return;  // primary button or touch only
       e.preventDefault();
-      down = true;
-      b.setPointerCapture(e.pointerId);
+      try { b.setPointerCapture(e.pointerId); } catch (err) { /* inactive pointer: no capture */ }
+      pointer = e.pointerId;
       sendKey('keydown', b.dataset.code);
     });
-    var up = function () { if (down) { down = false; sendKey('keyup', b.dataset.code); } };
+    var release = function () { pointer = null; sendKey('keyup', b.dataset.code); };
+    // Only the pointer that pressed the key releases it.
+    var up = function (e) { if (pointer !== null && e.pointerId === pointer) release(); };
     b.addEventListener('pointerup', up);
     b.addEventListener('pointercancel', up);
     b.addEventListener('lostpointercapture', up);
-    window.addEventListener('blur', up);
+    window.addEventListener('blur', function () { if (pointer !== null) release(); });
   });
   document.getElementById('reset').addEventListener('click', function () {
     if (Module.simResetStorage) Module.simResetStorage();
