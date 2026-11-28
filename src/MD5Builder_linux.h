@@ -8,7 +8,7 @@
 
 #if defined(__APPLE__)
 #include <CommonCrypto/CommonDigest.h>
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__EMSCRIPTEN__)
 #include <openssl/md5.h>
 #else
 #error "Unsupported host OS for simulator MD5Builder"

@@ -3,6 +3,7 @@
 #include <cstdint>
 
 #include "FreeRTOS.h"
+#include "../SimulatorWeb.h"
 
 // Thread-local pointer so ulTaskNotifyTake can find the current task's handle.
 inline thread_local SimTaskHandle *tl_currentTaskHandle = nullptr;
@@ -99,6 +100,10 @@ inline void vTaskDelay(uint32_t ticks) {
     std::this_thread::yield();
     return;
   }
+#ifdef __EMSCRIPTEN__
+  if (SimulatorWeb::sleepOnMainThread(ticks * portTICK_PERIOD_MS))
+    return;
+#endif
   std::this_thread::sleep_for(std::chrono::milliseconds(
       static_cast<int64_t>(ticks) * portTICK_PERIOD_MS));
 }

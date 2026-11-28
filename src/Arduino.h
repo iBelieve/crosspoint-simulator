@@ -13,6 +13,7 @@
 
 #include "freertos/FreeRTOS.h"
 #include "esp_system.h"
+#include "SimulatorWeb.h"
 
 #define PROGMEM
 #define ICACHE_RODATA_ATTR
@@ -38,6 +39,10 @@ inline unsigned long micros() {
 }
 
 inline void delay(unsigned long ms) {
+#ifdef __EMSCRIPTEN__
+  if (SimulatorWeb::sleepOnMainThread(ms))
+    return;
+#endif
   std::this_thread::sleep_for(std::chrono::milliseconds(ms));
 }
 inline void yield() { std::this_thread::yield(); }
@@ -68,6 +73,8 @@ struct ESPMock {
   }
 
   uint32_t getFreeHeap() { return heapValue("CROSSPOINT_SIM_FREE_HEAP"); }
+  // No-op, as on the host: firmware keeps silent-restart targets in
+  // RTC_NOINIT globals that a page reload would lose.
   void restart() {}
   uint32_t getHeapSize() { return HEAP_SIZE; }
   uint32_t getMinFreeHeap() { return getFreeHeap(); }
