@@ -134,22 +134,41 @@ function simSave(done) {
   simStartSave();
 }
 
-// IDBFS stores a file only when its whole-millisecond mtime changed. A write
-// in the same millisecond as a save, after the save read the file, would
-// never be stored. So each save also stores every file changed since the
-// previous save started.
-var simLastSaveStart = null;  // ms
-var simForceSince = null;     // set only while a save lists local files
+// IDBFS saves a file only when its millisecond mtime changed. A write in the
+// same millisecond as a save, after the save read the file, would never be
+// saved, and truncating or writing nothing leaves mtime unchanged. So writes
+// and truncates mark the file dirty, and the next save stores dirty files.
+var simListingForSave = false;  // set only while a save lists local files
+var simSavingNodes = [];        // dirty files the running save picked up
 
 function simPatchIdbfs() {
+  var markDirty = function (node) {
+    if (node) node.simDirty = true;
+  };
+  var write = FS.write;
+  FS.write = function (stream) {
+    var written = write.apply(FS, arguments);
+    markDirty(stream.node);
+    return written;
+  };
+  var doTruncate = FS.doTruncate;
+  FS.doTruncate = function (stream, node) {
+    doTruncate.apply(FS, arguments);
+    markDirty(node);
+  };
   var getLocalSet = IDBFS.getLocalSet;
   IDBFS.getLocalSet = function (mount, callback) {
-    var since = simForceSince;
-    simForceSince = null;
+    var forSave = simListingForSave;
+    simListingForSave = false;
     return getLocalSet.call(IDBFS, mount, function (err, local) {
-      if (!err && since !== null) {
-        local.entries.forEach(function (entry) {
-          if (entry.timestamp.getTime() >= since) entry.timestamp = new Date(-1);
+      if (!err && forSave && local.entries instanceof Map) {
+        local.entries.forEach(function (entry, path) {
+          var node = FS.lookupPath(path).node;
+          if (!node.simDirty) return;
+          // Clear before the save reads the file: a later write re-marks it.
+          node.simDirty = false;
+          simSavingNodes.push(node);
+          entry.timestamp = new Date(-1);  // never equal to the saved copy's
         });
       }
       callback(err, local);
@@ -162,12 +181,16 @@ function simStartSave() {
   simQueued = [];
   simSaveAgain = false;
   simSaving = true;
-  var started = Date.now();
-  simForceSince = simLastSaveStart;
+  simListingForSave = true;
+  simSavingNodes = [];
   FS.syncfs(false, function (err) {
     simSaving = false;
-    if (err) console.error('simulator: could not save SD card', err);
-    else simLastSaveStart = started;
+    if (err) {
+      console.error('simulator: could not save SD card', err);
+      // Try these again next time.
+      simSavingNodes.forEach(function (node) { node.simDirty = true; });
+    }
+    simSavingNodes = [];
     if (simResetting) return;
     waiters.forEach(function (done) { done(); });
     if (simSaveAgain || simQueued.length) simStartSave();
