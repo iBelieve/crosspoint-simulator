@@ -42,8 +42,9 @@ def _tool_then_emscripten(name, *args, **kwargs):
         env.Replace(**TOOLS)
         _pending_tools.discard(name)
         if not _pending_tools:
-            # Done: library clones must not inherit this bound override.
-            env.Tool = _tool
+            # Done: drop the instance override so env and its clones use
+            # SCons' own Tool method again.
+            del env.Tool
     return result
 
 
@@ -64,6 +65,9 @@ env.Append(
         # Fixed memory: growth with -pthread slows every JS access to the
         # heap, which includes all SD card I/O.
         "-sINITIAL_MEMORY=268435456",
+        # Fixed memory turns aborting malloc on; keep NULL on failure so
+        # the firmware's allocation-failure paths run as on the device.
+        "-sABORTING_MALLOC=0",
         "-sSTACK_SIZE=1048576",
         "-sDEFAULT_PTHREAD_STACK_SIZE=1048576",
         "-sPTHREAD_POOL_SIZE=8",

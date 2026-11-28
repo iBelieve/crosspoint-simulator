@@ -19,6 +19,7 @@ var SIM_ONE_SHOT = ['CROSSPOINT_SIM_WAKE_REASON'];
 var simOwnsCard = false;
 var simLoaded = false;
 var simSaveTimer = null;
+var simLockError = false;  // the browser refused the Web Lock
 
 // A lasting notice; Emscripten clears Module.setStatus after startup.
 function simStatus(text) {
@@ -77,6 +78,7 @@ function simTakeLock() {
       // Locks refused (blocked site data, sandboxed frame): run without saving.
       console.error('simulator: no tab lock; the SD card will not be saved', err);
       simOwnsCard = false;
+      simLockError = true;
       resolve();
     });
   });
@@ -107,37 +109,39 @@ function simSeedFiles() {
     });
 }
 
+// Each save resolves the waiters that were queued before it started: their
+// writes are in its snapshot. Waiters queued during a save wait for the next
+// one, which then runs once, so a waiter is never delayed by more than that.
 var simSaving = false;
+var simQueued = [];        // waiters for the next save
 var simSaveAgain = false;  // a save was asked for while one was running
-var simSaveWaiters = [];
+var simResetting = false;  // Reset SD card is in progress: no more saves or reloads
+
 function simSave(done) {
-  if (done) simSaveWaiters.push(done);
-  if (!simOwnsCard || !simLoaded) {
-    simFinishSave();
+  if (!simOwnsCard || !simLoaded || simResetting) {
+    if (done && !simResetting) done();
     return;
   }
+  if (done) simQueued.push(done);
   if (simSaving) {
-    // The running save took its snapshot already; run one more after it.
     simSaveAgain = true;
     return;
   }
+  simStartSave();
+}
+
+function simStartSave() {
+  var waiters = simQueued;
+  simQueued = [];
+  simSaveAgain = false;
   simSaving = true;
   FS.syncfs(false, function (err) {
     simSaving = false;
     if (err) console.error('simulator: could not save SD card', err);
-    if (simSaveAgain) {
-      simSaveAgain = false;
-      simSave();
-      return;
-    }
-    simFinishSave();
+    if (simResetting) return;
+    waiters.forEach(function (done) { done(); });
+    if (simSaveAgain || simQueued.length) simStartSave();
   });
-}
-
-function simFinishSave() {
-  var waiters = simSaveWaiters;
-  simSaveWaiters = [];
-  waiters.forEach(function (done) { done(); });
 }
 
 // Runs callback once no save is in flight, without starting one.
@@ -148,7 +152,8 @@ function simWhenIdle(callback) {
 
 Module.postRun = Module.postRun || [];
 Module.postRun.push(function () {
-  if (!simOwnsCard) simStatus('Open in another tab: changes in this tab are not saved.');
+  if (simLockError) simStatus('This browser does not allow saving here: changes are not saved.');
+  else if (!simOwnsCard) simStatus('Open in another tab: changes in this tab are not saved.');
   else if (!simLoaded) simStatus('The saved SD card could not be loaded: changes are not saved.');
   simSaveTimer = setInterval(simSave, SIM_SAVE_MS);
   document.addEventListener('visibilitychange', function () {
@@ -179,7 +184,8 @@ Module.simReload = function (powerWake, slideSwitch) {
 // Clears the saved SD card and reloads with a fresh one.
 Module.simResetStorage = function () {
   clearInterval(simSaveTimer);
-  simOwnsCard = false;  // no more saves from this page
+  simResetting = true;  // drops later saves and the waiters of a running one
+  simQueued = [];
   simWhenIdle(function () {
     IDBFS.quit();  // close our connection so the delete is not blocked
     simDeleteCard();

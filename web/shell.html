@@ -53,15 +53,20 @@
 </main>
 <script>
   var statusEl = document.getElementById('status');
+  var crashed = false;
   var Module = {
     canvas: document.getElementById('canvas'),
     print: function (t) { console.log(t); },
     printErr: function (t) { console.error(t); },
-    setStatus: function (t) { statusEl.textContent = t; },
+    // Emscripten clears the status on a timer after startup; keep a crash message.
+    setStatus: function (t) { if (!crashed) statusEl.textContent = t; },
     onRuntimeInitialized: function () { statusEl.textContent = ''; },
     simNotice: function (t) { document.getElementById('notice').textContent = t; },
   };
-  var stopped = function () { statusEl.textContent = 'The simulator stopped. See the browser console.'; };
+  var stopped = function () {
+    crashed = true;
+    statusEl.textContent = 'The simulator stopped. See the browser console.';
+  };
   window.addEventListener('error', stopped);
   // A crash before main() first yields rejects Emscripten's run() promise.
   window.addEventListener('unhandledrejection', stopped);
