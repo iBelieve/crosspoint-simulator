@@ -50,6 +50,9 @@ Cross-Origin-Embedder-Policy: require-corp
   environment variables, for example `?CROSSPOINT_SIM_SCREEN_TEXT=1`.
   `CROSSPOINT_SIM_WAKE_REASON` is removed from the address bar once read, so
   a manual reload is a cold boot.
+- **Failed allocations.** `malloc` returns NULL when the fixed 256 MB heap
+  is full, as firmware expects. A NULL dereference does not trap in wasm,
+  though, so an unchecked failure can run on where the device would crash.
 - **Exceptions.** Emscripten builds without exception catching, so a `throw`
   aborts. A malformed `WAIT` regex in an input script stops the page instead
   of exiting with status 2.

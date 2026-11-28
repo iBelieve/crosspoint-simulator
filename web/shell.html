@@ -60,7 +60,7 @@
     printErr: function (t) { console.error(t); },
     // Emscripten clears the status on a timer after startup; keep a crash message.
     setStatus: function (t) { if (!crashed) statusEl.textContent = t; },
-    onRuntimeInitialized: function () { statusEl.textContent = ''; },
+    onRuntimeInitialized: function () { if (!crashed) statusEl.textContent = ''; },
     simNotice: function (t) { document.getElementById('notice').textContent = t; },
   };
   var stopped = function () {
