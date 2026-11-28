@@ -19,15 +19,34 @@
   #status { color: var(--muted); min-height: 1.4em; }
   #notice:empty { display: none; }
   #notice { border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; }
-  canvas { display: block; max-width: 100%; height: auto !important; background: #fff;
-           border: 1px solid var(--line); border-radius: 6px; touch-action: none; }
-  .keys { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
-  button { font: inherit; color: var(--fg); background: var(--key); border: 1px solid var(--line);
-           border-radius: 6px; padding: 8px 12px; min-width: 44px; cursor: pointer; user-select: none; touch-action: none; }
+  /* The page draws an X4-family bezel: front keys under the screen (in the
+     order of the on-screen button hints), side keys and power on the right. */
+  .device { display: grid; grid-template-columns: minmax(0, auto) auto; gap: 10px 12px;
+            align-items: start; max-width: 100%; }
+  .bezel { background: var(--key); border: 1px solid var(--line); border-radius: 18px; padding: 14px 14px 12px;
+           display: grid; gap: 12px; min-width: 0; }
+  /* Fit the whole device, front keys included, in the window height. */
+  canvas { display: block; max-width: 100%; width: auto !important; height: auto !important;
+           max-height: max(360px, calc(100vh - 250px)); background: #fff;
+           border: 1px solid var(--line); border-radius: 4px; touch-action: none; }
+  /* Centred under the firmware's button hints (20/39/61/79% of the width). */
+  .front { position: relative; height: 48px; }
+  .front button { position: absolute; top: 0; width: 18%; padding: 6px 2px; transform: translateX(-50%); }
+  .front button:nth-child(1) { left: 20%; }
+  .front button:nth-child(2) { left: 39%; }
+  .front button:nth-child(3) { left: 61%; }
+  .front button:nth-child(4) { left: 79%; }
+  .side { display: grid; gap: 8px; padding-top: 40px; }
+  .side .gap { height: 120px; }
+  button { font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--line);
+           border-radius: 8px; padding: 6px 10px; min-width: 44px; min-height: 44px; cursor: pointer;
+           user-select: none; touch-action: none; display: grid; justify-items: center; line-height: 1.2; }
+  button small { color: var(--muted); font-size: 11px; }
+  .side button { width: 64px; }
   button:active { filter: brightness(0.9); }
   kbd { font: 12px ui-monospace, monospace; border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
   footer { color: var(--muted); font-size: 13px; text-align: center; }
-  footer button { padding: 4px 8px; font-size: 13px; }
+  footer button { display: inline-block; min-height: 0; padding: 4px 8px; font-size: 13px; }
 </style>
 </head>
 <body>
@@ -35,18 +54,25 @@
   <header><h1>CrossPoint Simulator</h1><span id="build"></span></header>
   <div id="status">Loading…</div>
   <div id="notice" role="status"></div>
-  <canvas id="canvas" tabindex="0" oncontextmenu="event.preventDefault()"></canvas>
-  <div class="keys" id="keys">
-    <button data-code="Escape" title="Esc">Back</button>
-    <button data-code="ArrowLeft" title="←">◀</button>
-    <button data-code="Enter" title="Enter">Confirm</button>
-    <button data-code="ArrowRight" title="→">▶</button>
-    <button data-code="ArrowUp" title="↑">▲</button>
-    <button data-code="ArrowDown" title="↓">▼</button>
-    <button data-code="KeyP" title="P">Power</button>
+  <div class="device" id="keys">
+    <div class="bezel">
+      <canvas id="canvas" tabindex="0" oncontextmenu="event.preventDefault()"></canvas>
+      <div class="front" aria-label="Front buttons">
+        <button data-code="Escape">Back<small>Esc</small></button>
+        <button data-code="Enter">Confirm<small>Enter</small></button>
+        <button data-code="ArrowLeft">Left<small>←</small></button>
+        <button data-code="ArrowRight">Right<small>→</small></button>
+      </div>
+    </div>
+    <div class="side" aria-label="Side buttons">
+      <button data-code="KeyP">Power<small>P</small></button>
+      <div class="gap"></div>
+      <button data-code="ArrowUp">▲<small>↑</small></button>
+      <button data-code="ArrowDown">▼<small>↓</small></button>
+    </div>
   </div>
   <footer>
-    Keys: <kbd>Esc</kbd> back, <kbd>Enter</kbd> confirm, arrows, <kbd>P</kbd> power, <kbd>S</kbd> sleep.
+    Front keys under the screen, page-turn keys and power on the side. Hold Power, or press <kbd>S</kbd>, to sleep.
     The SD card is saved in this browser.
     <button id="reset" type="button">Reset SD card</button>
   </footer>
@@ -74,13 +100,14 @@
 
   // On-screen keys send the same key events SDL reads from the keyboard.
   var KEY_CODES = { Escape: 27, Enter: 13, ArrowLeft: 37, ArrowUp: 38, ArrowRight: 39, ArrowDown: 40, KeyP: 80 };
+  var KEY_NAMES = { KeyP: 'p' };  // DOM key values; the others match their code
   function sendKey(type, code) {
-    var e = new KeyboardEvent(type, { code: code, key: code.replace(/^Key/, '').toLowerCase(), bubbles: true });
+    var e = new KeyboardEvent(type, { code: code, key: KEY_NAMES[code] || code, bubbles: true, cancelable: true });
     Object.defineProperty(e, 'keyCode', { get: function () { return KEY_CODES[code]; } });
     Object.defineProperty(e, 'which', { get: function () { return KEY_CODES[code]; } });
     window.dispatchEvent(e);
   }
-  document.querySelectorAll('#keys button').forEach(function (b) {
+  document.querySelectorAll('#keys button[data-code]').forEach(function (b) {
     var down = false;
     b.addEventListener('pointerdown', function (e) { e.preventDefault(); down = true; b.setPointerCapture(e.pointerId); sendKey('keydown', b.dataset.code); });
     var up = function () { if (down) { down = false; sendKey('keyup', b.dataset.code); } };
