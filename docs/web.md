@@ -50,6 +50,9 @@ Cross-Origin-Embedder-Policy: require-corp
   environment variables, for example `?CROSSPOINT_SIM_SCREEN_TEXT=1`.
   `CROSSPOINT_SIM_WAKE_REASON` is removed from the address bar once read, so
   a manual reload is a cold boot.
+- **Time zone.** Emscripten's `localtime` uses the browser's zone and
+  ignores `TZ`, so on profiles with an RTC the clock shows browser local
+  time whatever time zone the firmware sets.
 - **Failed allocations.** `malloc` returns NULL when the fixed 256 MB heap
   is full, as firmware expects. A NULL dereference does not trap in wasm,
   though, so an unchecked failure can run on where the device would crash.
