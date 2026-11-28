@@ -89,5 +89,5 @@ env.Depends(
 
 # CROSSPOINT_SIM_WEB_DEBUG=1 keeps function names and runtime checks, for
 # readable stacks in the browser's devtools.
-if os.environ.get("CROSSPOINT_SIM_WEB_DEBUG"):
+if os.environ.get("CROSSPOINT_SIM_WEB_DEBUG") == "1":
     env.Append(LINKFLAGS=["--profiling-funcs", "-sASSERTIONS=1"])

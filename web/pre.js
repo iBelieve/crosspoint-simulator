@@ -45,6 +45,7 @@ Module.preRun.push(function () {
     history.replaceState(null, '', location.pathname + simQueryWithout(SIM_ONE_SHOT) + location.hash);
   }
 
+  simPatchIdbfs();
   FS.mkdir(SIM_SD);
   FS.mount(IDBFS, {}, SIM_SD);
   addRunDependency('sim-sd');
@@ -133,14 +134,40 @@ function simSave(done) {
   simStartSave();
 }
 
+// IDBFS stores a file only when its whole-millisecond mtime changed. A write
+// in the same millisecond as a save, after the save read the file, would
+// never be stored. So each save also stores every file changed since the
+// previous save started.
+var simLastSaveStart = null;  // ms
+var simForceSince = null;     // set only while a save lists local files
+
+function simPatchIdbfs() {
+  var getLocalSet = IDBFS.getLocalSet;
+  IDBFS.getLocalSet = function (mount, callback) {
+    var since = simForceSince;
+    simForceSince = null;
+    return getLocalSet.call(IDBFS, mount, function (err, local) {
+      if (!err && since !== null) {
+        local.entries.forEach(function (entry) {
+          if (entry.timestamp.getTime() >= since) entry.timestamp = new Date(-1);
+        });
+      }
+      callback(err, local);
+    });
+  };
+}
+
 function simStartSave() {
   var waiters = simQueued;
   simQueued = [];
   simSaveAgain = false;
   simSaving = true;
+  var started = Date.now();
+  simForceSince = simLastSaveStart;
   FS.syncfs(false, function (err) {
     simSaving = false;
     if (err) console.error('simulator: could not save SD card', err);
+    else simLastSaveStart = started;
     if (simResetting) return;
     waiters.forEach(function (done) { done(); });
     if (simSaveAgain || simQueued.length) simStartSave();

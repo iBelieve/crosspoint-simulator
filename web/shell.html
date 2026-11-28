@@ -138,7 +138,8 @@
     window.addEventListener('blur', function () { if (pointer !== null) release(); });
   });
   document.getElementById('reset').addEventListener('click', function () {
-    if (Module.simResetStorage) Module.simResetStorage();
+    if (!Module.simResetStorage) return;
+    if (window.confirm('Erase the saved SD card (books, settings and progress) and start fresh?')) Module.simResetStorage();
   });
 
   // build.json is written by the preview deploy: {"label": "...", "url": "..."}.
