@@ -116,7 +116,8 @@
     b.addEventListener('pointerdown', function (e) {
       if (e.button !== 0 || pointer !== null) return;  // primary button or touch only
       e.preventDefault();
-      try { b.setPointerCapture(e.pointerId); } catch (err) { /* inactive pointer: no capture */ }
+      // Without capture the release could be missed; skip the press.
+      try { b.setPointerCapture(e.pointerId); } catch (err) { return; }
       pointer = e.pointerId;
       sendKey('keydown', b.dataset.code);
     });
