@@ -56,6 +56,8 @@ Module.preRun.push(function () {
       } else {
         simLoaded = true;
       }
+      // Files just loaded from IndexedDB are already saved.
+      simTrackWrites = true;
       simSeedFiles().finally(function () {
         removeRunDependency('sim-sd');
       });
@@ -138,12 +140,13 @@ function simSave(done) {
 // same millisecond as a save, after the save read the file, would never be
 // saved, and truncating or writing nothing leaves mtime unchanged. So writes
 // and truncates mark the file dirty, and the next save stores dirty files.
+var simTrackWrites = false;     // off while the saved card is loaded
 var simListingForSave = false;  // set only while a save lists local files
 var simSavingNodes = [];        // dirty files the running save picked up
 
 function simPatchIdbfs() {
   var markDirty = function (node) {
-    if (node) node.simDirty = true;
+    if (node && simTrackWrites) node.simDirty = true;
   };
   var write = FS.write;
   FS.write = function (stream) {

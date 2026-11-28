@@ -48,7 +48,8 @@ Cross-Origin-Embedder-Policy: require-corp
   Writes and truncates mark a file dirty so the next save stores it even
   when its millisecond mtime did not change; this wraps `FS.write`,
   `FS.doTruncate` and `IDBFS.getLocalSet`, checked against Emscripten
-  7.0.1. The page's "Reset SD card" button clears it.
+  7.0.1. The page's "Reset SD card" button, after asking, erases the saved
+  card.
 - **On-screen keys.** `web/shell.html` draws the X4 Classic's keys: two
   bars under the screen (Back and Confirm, then Left/Prev and Right/Next), Up on the
   left side, Power and Down on the right side. Each sends the same key event
