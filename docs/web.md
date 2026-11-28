@@ -47,7 +47,7 @@ Cross-Origin-Embedder-Policy: require-corp
   starts an asynchronous save that deadlocks when a worker thread calls it.
   The page's "Reset SD card" button clears it.
 - **On-screen keys.** `web/shell.html` draws the X4 Classic's keys: two
-  bars under the screen (Back and Confirm, then Left and Right), Up on the
+  bars under the screen (Back and Confirm, then Left/Prev and Right/Next), Up on the
   left side, Power and Down on the right side. Each sends the same key event
   as the keyboard. Profiles with other keys
   (Home, a slide switch) need the keyboard for those.

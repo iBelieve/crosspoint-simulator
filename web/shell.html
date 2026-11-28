@@ -22,7 +22,7 @@
   /* The page draws the X4 Classic: two rocker bars under the screen (Back and
      Confirm, then Previous and Next page, under the firmware's button hints),
      Previous Page on the left side, Power and Next Page on the right side. */
-  .device { padding: 0 40px; max-width: 100%; }
+  .device { padding: 0 44px; max-width: 100%; }
   .bezel { position: relative; background: var(--key); border: 1px solid var(--line); border-radius: 18px; padding: 14px 14px 12px;
            display: grid; gap: 12px; min-width: 0; }
   /* Fit the whole device, front keys included, in the window height. */
@@ -39,12 +39,13 @@
   .bar button + button { border-left: 1px solid var(--line); }
   @media (max-width: 480px) { .bar { border-radius: 14px; } .bar button { font-size: 10px; } }
   /* Side keys stick out of the bezel's edges, at the device's heights. */
-  .side { position: absolute; width: 30px; min-width: 0; padding: 6px 0; height: 12%;
+  .side { position: absolute; width: 36px; min-width: 0; padding: 6px 0; height: 12%;
           align-content: center; }
-  .side.left { right: 100%; top: 21%; border-right: 0; border-radius: 8px 0 0 8px; }
+  .side.left { right: 100%; top: max(21%, calc(11% + 52px)); border-right: 0; border-radius: 8px 0 0 8px; }
   .side.right { left: 100%; border-left: 0; border-radius: 0 8px 8px 0; }
   .side.power { top: 11%; height: 7%; }
-  .side.next { top: 21%; }
+  /* Below Power even when Power is held at its 44px minimum height. */
+  .side.next { top: max(21%, calc(11% + 52px)); }
   button { font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--line);
            border-radius: 8px; padding: 6px 10px; min-width: 44px; min-height: 44px; cursor: pointer;
            user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
@@ -74,9 +75,9 @@
           <button data-code="ArrowRight" title="Next (→)">Next<small>→</small></button>
         </div>
       </div>
-      <button class="side left" data-code="ArrowUp" title="Previous page (↑)">▲<small>↑</small></button>
-      <button class="side right power" data-code="KeyP" title="Power (P)">⏻<small>P</small></button>
-      <button class="side right next" data-code="ArrowDown" title="Next page (↓)">▼<small>↓</small></button>
+      <button class="side left" data-code="ArrowUp" aria-label="Previous page" title="Previous page (↑)">▲<small>↑</small></button>
+      <button class="side right power" data-code="KeyP" aria-label="Power" title="Power (P)">⏻<small>P</small></button>
+      <button class="side right next" data-code="ArrowDown" aria-label="Next page" title="Next page (↓)">▼<small>↓</small></button>
     </div>
   </div>
   <footer>
